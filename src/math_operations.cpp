@@ -28,6 +28,7 @@
 #include <pybind11/stl.h>       // Automatic conversion for STL containers (vector, map, etc.)
 #include <vector>
 #include <cmath>
+#include <utility>
 
 // Namespace alias - just a shorthand so we can write "py::" instead of "pybind11::"
 namespace py = pybind11;
@@ -41,12 +42,15 @@ namespace py = pybind11;
 // This is a simple example but with large n, the difference between
 // Python and C++ becomes very noticeable.
 
-long long sum_of_squares(long long n) {
-    long long result = 0;
-    for (long long i = 1; i <= n; ++i) {
-        result += i * i;
+py::object sum_of_squares(long long n) {
+    if (n <= 0) {
+        return py::int_(0);
     }
-    return result;
+
+    // Use the closed-form n(n+1)(2n+1)/6 with Python big ints to avoid overflow.
+    py::object pn = py::int_(n);
+    py::object numerator = pn * (pn + py::int_(1)) * (py::int_(2) * pn + py::int_(1));
+    return numerator.attr("__floordiv__")(py::int_(6));
 }
 
 
@@ -87,21 +91,30 @@ int count_primes(int n) {
 // We use an iterative approach (not recursive) because:
 // 1. It's faster - O(n) vs O(2^n) for naive recursion
 // 2. It doesn't overflow the call stack for large n
+//
+// Returns a Python object (arbitrary precision int) instead of long long
+// to handle arbitrarily large Fibonacci numbers without overflow.
 
-long long fibonacci(int n) {
-    if (n <= 0) return 0;
-    if (n == 1) return 1;
-
-    long long prev2 = 0;  // F(n-2)
-    long long prev1 = 1;  // F(n-1)
-    long long current = 0;
-
-    for (int i = 2; i <= n; ++i) {
-        current = prev1 + prev2;
-        prev2 = prev1;
-        prev1 = current;
+static std::pair<py::object, py::object> fib_pair(long long n) {
+    if (n == 0) {
+        return {py::int_(0), py::int_(1)};
     }
-    return current;
+
+    auto [a, b] = fib_pair(n / 2);              // a=F(k), b=F(k+1)
+    py::object c = a * (py::int_(2) * b - a);   // F(2k)
+    py::object d = a * a + b * b;               // F(2k+1)
+
+    if ((n % 2) == 0) {
+        return {c, d};
+    }
+    return {d, c + d};
+}
+
+py::object fibonacci(int n) {
+    if (n <= 0) {
+        return py::int_(0);
+    }
+    return fib_pair(n).first;
 }
 
 

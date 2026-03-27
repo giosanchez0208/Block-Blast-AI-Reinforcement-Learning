@@ -1,0 +1,33 @@
+[build-system]
+# =============================================================================
+# pyproject.toml
+# =============================================================================
+#
+# This file tells pip what tools are needed to BUILD your package.
+# It's read before setup.py, so pip knows to install pybind11 first.
+#
+# WHY DO WE NEED THIS?
+# --------------------
+# Problem: setup.py imports pybind11, but pybind11 isn't installed yet!
+# Solution: pyproject.toml tells pip "install these packages first, THEN
+#           run setup.py"
+#
+# This file uses the TOML format (Tom's Obvious Minimal Language).
+# It's simpler than JSON and more readable than YAML.
+# =============================================================================
+
+# Packages required to BUILD this project (not to USE it)
+requires = [
+    "setuptools>=45",      # The standard Python build tool
+    "pybind11>=2.10.0",    # Needed to compile C++ with Python bindings
+]
+
+# The tool that will run the build
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fast_math"
+version = "1.0.0"
+description = "A demo C++/Python integration project for learning"
+requires-python = ">=3.7"
+dependencies = []
